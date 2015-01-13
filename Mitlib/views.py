@@ -9,38 +9,56 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import requires_csrf_token
 from django.shortcuts import render_to_response
 from django.shortcuts import get_object_or_404,render
-from django.views.generic import View
+from django.views import generic
 from django.contrib.auth.decorators import login_required
 from Mitlib.models import Question, Choice 
 from Mitlib.forms import MyForm
 
 
 
-def index(request):
-	latest_question_list  = Question.objects.order_by('-pub_date')[:5]
-	template = loader.get_template('polls/index.html')
-	context = RequestContext(request, {'latest_question_list':latest_question_list})
-	return HttpResponse(template.render(context))
+class IndexView(generic.ListView):
+	template_name = ('polls/index.html')
+	context_object_name = 'latest_question_list'
+	def get_queryset(self):
+		return Question.objects.order_by('-pub_date')[:5]
+
+class DetailView(generic.DetailView):
+	model = Question
+	template_name = 'polls/detail.html'
 
 
-@csrf_exempt
-def detail(request,question_id):
-	p = get_object_or_404(Question, pk = question_id)
-	choice = get_object_or_404(Choice)
-	return render(request, 'polls/detail.html',{'question':p})
+
+class ResultView(generic.DetailView):
+	model = Question
+	template_name = 'polls/result.html'
 
 
-@csrf_exempt
-def result(request, question_id):
-	question = get_object_or_404(Question, pk = question_id)
-	return render(request, 'polls/result.html', {'question':question})
+
+#def index(request):
+#	latest_question_list  = Question.objects.order_by('-pub_date')[:5]
+#	template = loader.get_template('polls/index.html')
+#	context = RequestContext(request, {'latest_question_list':latest_question_list})
+#	return HttpResponse(template.render(context))
+
+
+#@csrf_exempt
+#def detail(request,question_id):
+#	p = get_object_or_404(Question, pk = question_id)
+#	choice = get_object_or_404(Choice)
+#	return render(request, 'polls/detail.html',{'question':p})
+
+
+#@csrf_exempt
+#def result(request, question_id):
+#	question = get_object_or_404(Question, pk = question_id)#
+#	return render(request, 'polls/result.html', {'question':question})
 
 @csrf_exempt
 def votes(request, question_id):
 	p = get_object_or_404(Question, pk = question_id)
 	try:
 		selected_choice = p.choice_set.get(pk = request.POST['choice'])
-	except (KeyError):
+	except (KeyError, Choice.DoesNotExists):
 		return render(request,'polls/detail.html',
 	{'question':p, 'error_message':'You didn\'t select a choice'})
 	else:

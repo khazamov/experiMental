@@ -3,7 +3,6 @@
 '''
  Omar Khazamov 
 
- Market Simulator with Bollinger bands implementation
 '''
 
 import os

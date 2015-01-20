@@ -15,7 +15,7 @@ import csv
 import pandas as pd
 import datetime as dt
 from dateutil.relativedelta import *
-
+import json
 import operator
 import copy
 import math
@@ -24,39 +24,21 @@ import QSTK.qstkstudy.EventProfiler as ep
 
 ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
     # function for sorting csv file from csv how-to
-def sort_by_column(csv_cont, col, reverse=False):
-        """ 
-        Sorts CSV contents by column name (if col argument is type <str>) 
-        or column index (if col argument is type <int>). 
-        
-        """
-        header = csv_cont[0]
-        body = csv_cont[1:]
-        if isinstance(col, str):  
-            col_index = header.index(col)
-        else:
-            col_index = col
-        body = sorted(body, 
-               key=operator.itemgetter(col_index), 
-               reverse=reverse)
-        body.insert(0, header)
-        return body
-    
-    #working with python datetime is more convenient 
-    
+
 def insertDT(input_list):
         to_be_sorted = copy.deepcopy(input_list)
         for order_piece in to_be_sorted:
             tickDT = dt.date(int(order_piece[0]),int(order_piece[1]),int(order_piece[2]))
             order_piece[0] = tickDT
         return to_be_sorted
-        
     
 class Trader:
       
       filepath = ''
-      
+
       def __init__(self, filename, dataprovider, startdt, enddt, initial_cash):
+          self.daily_portfolio_return = []
+          self.daily_spy_return = []
           self.dt_start = startdt
           self.dt_end = enddt 
           self.filepath = filename
@@ -85,6 +67,8 @@ class Trader:
           #ldf_data_2008 = dataobj.get_data(ldt_timestamps, ls_symbols_2008, ls_keys)
           #self.spy_d_data = dict(zip(ls_keys, spy_ldf_data ))            
           
+
+
       def process_data(self):
           
           dt_timeofday = dt.timedelta(hours=16)
@@ -356,21 +340,22 @@ class Trader:
                    #important to keep rebalancing outside of the trade orders loop
                    #otherwise daily returns will have multiple entries for the same day and computestats() will return erroneous results
               for ticker in self.portfolio:
-                    cash_value +=  self.portfolio[ticker] * close_prices[ticker][time]
+                    cash_value  +=   self.portfolio[ticker] * close_prices[ticker][time]
               self.daily_portfolio_val.append(self.cumulativeportval  + cash_value)
               print time, self.portfolio, self.cumulativeportval  + cash_value
                  
-      def computestats(self):          
+      def computestats(self):
+
              #nothing fancy, just use library functions to compute daily returns, standard deviation and average of daily returns
              self.daily_portfolio_val /= self.daily_portfolio_val[0]
-             daily_portfolio_return = tsu.returnize0(self.daily_portfolio_val)
-             avg = np.mean(daily_portfolio_return) 
-             stdev = np.std(daily_portfolio_return)
+             self.daily_portfolio_return = tsu.returnize0(self.daily_portfolio_val)
+             avg = np.mean(self.daily_portfolio_return)
+             stdev = np.std(self.daily_portfolio_return)
              SR = avg / stdev * math.sqrt(252)   
              total_return = 1
-             for ret in range(1,len(daily_portfolio_return)):
+             for ret in range(1,len(self.daily_portfolio_return)):
                  
-                 total_return = total_return * (1 + daily_portfolio_return[ret])
+                 total_return = total_return * (1 + self.daily_portfolio_return[ret])
              
              spy_ldf_data = self.dataobj.get_data(self.ldt_timestamps, ['SPY'], ls_keys)
                  #ldf_data_2008 = dataobj.get_data(ldt_timestamps, ls_symbols_2008, ls_keys)
@@ -379,26 +364,34 @@ class Trader:
              close_prices = close_prices.fillna(method='ffill')
              close_prices = close_prices.fillna(method='bfill') 
              na_rets_spy = close_prices['SPY'].values
-             daily_spy_return = tsu.returnize0(na_rets_spy)
+             self.daily_spy_return = tsu.returnize0(na_rets_spy)
              
              print "AVG return: ",avg, "stdev of return: ", stdev, "sharp ratio: ", SR , "total cumulative return", total_return      
-             plt.clf()
-             plt.plot(self.ldt_timestamps, daily_portfolio_return)
-             plt.plot(self.ldt_timestamps, daily_spy_return)
+             print self.daily_portfolio_return
+	     print self.daily_spy_return
+	     plt.clf()
+             plt.plot(self.ldt_timestamps, self.daily_portfolio_return)
+             plt.plot(self.ldt_timestamps, self.daily_spy_return)
              plt.legend(self.ls_symbols)
              plt.ylabel('Return comparison')
-             plt.xlabel('Date')             
-                
-def main():
-     
+             plt.xlabel('Date')
 
-        rstrategy = Trader('orders.csv', 'Yahoo', dt.datetime(2008, 01, 01), dt.datetime(2009, 12,31), 100000)
-        #TO DO: replace reading from file (eventprofiler \ computestats )
-        rstrategy.find_events_wband()
-        #rstrategy.jan_trader()
-        rstrategy.process_data()
-        rstrategy.run()
-        rstrategy.computestats()
-        print rstrategy.order_table
+
+                
+def simulate():
+            rstrategy = Trader('orders.csv', 'Yahoo', dt.datetime(2008, 02, 27), dt.datetime(2009, 03,30), 100000)
+
+            rstrategy.find_events_wband()
+
+            #rstrategy.jan_trader()
+
+            rstrategy.process_data()
+
+            rstrategy.run()
+
+            #rstrategy.computestats()
+
+            #print rstrategy.order_table
+
 if __name__ == '__main__':
-        main()
+        simulate()

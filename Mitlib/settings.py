@@ -40,9 +40,9 @@ INSTALLED_APPS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -51,7 +51,8 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'Mitlib.urls'
 
-WSGI_APPLICATION = 'Mitlib.wsgi.application'
+application = 'Mitlib.wsgi.application'
+WSGI_APPLICATION = application
 
 
 # Database
@@ -61,9 +62,15 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+               }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'my_cache_tables',
+    }
+}
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 

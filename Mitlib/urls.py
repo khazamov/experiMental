@@ -8,8 +8,9 @@ urlpatterns = patterns('',
 
     url(r'^Mitlib/$', views.IndexView.as_view(), name='index'),
     url(r'^Mitlib/(?P<pk>\d+)/', views.DetailView.as_view(), name  = 'detail'),
-    url(r'^Mitlib/(?P<pk>\d+)/result$', views.ResultView.as_view(), name = 'result'),
-    url(r'^Mitlib/(?P<question_id>\d+)/votes$', views.votes, name = 'votes'),
+    url(r'^Mitlib/(?P<question_id>\d+)/result/$', views.result, name = 'result'),
+    url(r'^Mitlib/(?P<question_id>\d+)/votes$', views.votes, name = 'vote'),
+    url(r'^Mitlib/traderesult\d?$', views.traderesult, name = 'traderesult')
 
 
 )

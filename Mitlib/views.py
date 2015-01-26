@@ -14,6 +14,9 @@ import json
 import numpy
 
 
+#pdb.set_trace()
+
+
 
 ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
 
@@ -54,10 +57,12 @@ class DetailView(generic.DetailView):
         return Question.objects.filter(pub_date__lte=timezone.now())
 
 def traderesult(request):
+
     if request.method == 'POST':
         form = Myform(request.POST)
         if form.is_valid():
-            rstrategy = Trader('orders.csv', 'Yahoo', dt.datetime(2008, 01, 01), dt.datetime(2009, 12,31), 100000)
+            date_start = form.date_start
+            rstrategy = Trader('orders.csv', 'Yahoo', date_start , dt.datetime(2009, 12,31), 100000)
             rstrategy.find_events_wband()
             rstrategy.process_data()
             rstrategy.run()
@@ -65,11 +70,10 @@ def traderesult(request):
             sDaily_portfolio_return = json.dumps(rstrategy.daily_portfolio_return.tolist())
             sDaily_fund_return = json.dumps(rstrategy.daily_spy_return.tolist())
             return render(request, 'Mitlib/traderesult.html', {'daily_fund_return':sDaily_fund_return, 'daily_portfolio_return':sDaily_portfolio_return })
-
     else:
-        form = Myform()
-
+            form = Myform()
     return render(request, 'Mitlib/traderesult.html', {'form':form})
+
 
 def result(request, question_id):
     p = get_object_or_404(Question, pk=question_id)

@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '2)yv4!v0si--vndv!^b@f5)+7%$xij%ky2l)9)#dnh(e5vayk8'
+SECRET_KEY = '^8oy$o=*5&#i=$2&0g3r=$gbd5=#w9ig8_32rffw(*rd8@4ft1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -36,7 +36,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Mitlib'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -51,8 +50,7 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'Mitlib.urls'
 
-application = 'Mitlib.wsgi.application'
-WSGI_APPLICATION = application
+WSGI_APPLICATION = 'Mitlib.wsgi.application'
 
 
 # Database
@@ -62,19 +60,22 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-               }
+    }
 }
+
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'my_cache_tables',
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': 'unix:/tmp/memcached.sock',
     }
 }
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 
-LANGUAGE_CODE = 'ru-ru'
+LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 

@@ -1,0 +1,34 @@
+<h1> {{ question.question_text }} </h1>
+
+{% if error_message %}
+
+<strong>  {{ error_message }}  </strong>
+
+{% endif %}
+
+
+<form action="{% url 'result' question.id  %}" method = "GET">
+
+{% csrf_token %}
+
+{% for choice in question.choice_set.all %}
+
+<li>
+
+
+    <input type = "radio" name = "choice" id="choice{{forloop.counter}}" value = "{{ choice.id }}"/>
+
+
+</li>
+
+<label for = "choice{{ forloop.counter }}"> {{ choice.choice_text }} <label/>
+
+
+<br/>
+
+{% endfor %}
+
+
+<input type='submit' value='Submit'/>
+
+</form>

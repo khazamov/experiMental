@@ -20,6 +20,7 @@ import copy
 import math
 import matplotlib.pyplot as plt
 import QSTK.qstkstudy.EventProfiler as ep
+import httplib
 
 ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
     # function for sorting csv file from csv how-to
@@ -30,7 +31,10 @@ def insertDT(input_list):
             tickDT = dt.date(int(order_piece[0]),int(order_piece[1]),int(order_piece[2]))
             order_piece[0] = tickDT
         return to_be_sorted
-    
+
+
+
+
 class Trader:
       
       filepath = ''
@@ -65,7 +69,21 @@ class Trader:
           # spy_ldf_data = self.dataobj.get_data(self.ldt_timestamps, ['SPY'], ls_keys)
           #ldf_data_2008 = dataobj.get_data(ldt_timestamps, ls_symbols_2008, ls_keys)
           #self.spy_d_data = dict(zip(ls_keys, spy_ldf_data ))            
-          
+
+      def tradier_api():
+            connection = httplib.HTTPSConnection('sandbox.tradier.com',443, timeout = 30)
+            headers = {"Accept":"application/json",
+               "Authorization": "Bearer ufXQkV1EC3VWP9rnhhCIotuOKMS7" }
+            connection.request('POST', '/v1/markets/quotes?symbols=spy', None, headers)
+            try:
+                response = connection.getresponse()
+                content = response.read()
+                #Success
+                print('Response status ' + str(response.status))
+                return content
+            except httplib.HTTPException, e:
+                #Exception
+                print('Exception during request')
 
 
       def process_data(self):

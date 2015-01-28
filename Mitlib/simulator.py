@@ -23,7 +23,8 @@ import QSTK.qstkstudy.EventProfiler as ep
 import httplib
 
 ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
-    # function for sorting csv file from csv how-to
+
+# function for sorting csv file from csv how-to
 
 def insertDT(input_list):
         to_be_sorted = copy.deepcopy(input_list)
@@ -34,8 +35,7 @@ def insertDT(input_list):
 
 
 
-
-class Trader:
+    class Trader:
       
       filepath = ''
 
@@ -53,30 +53,34 @@ class Trader:
           self.d_data = []
           self.daily_portfolio_val = []
           self.ls_symbols = []
-          
+
+          self.connection = []
+          self.headers = []
+
+
+          self.headers = {"Accept":"application/json",
+               "Authorization": "Bearer ufXQkV1EC3VWP9rnhhCIotuOKMS7" }
+          self.connection = httplib.HTTPSConnection('sandbox.tradier.com',443, timeout = 30)
           self.ldt_timestamps = du.getNYSEdays(self.dt_start, self.dt_end, dt.timedelta(hours=16))
           for date in self.ldt_timestamps:
                 print date 
                   
           self.dataobj = da.DataAccess(dataprovider)
+
           self.ls_symbols = self.dataobj.get_symbols_from_list('sp5002012')
           #ls_symbols_2008 = dataobj.get_symbols_from_list('sp5002008')
           
-          #
+
           self.ls_symbols.append('SPY')
           ldf_data = self.dataobj.get_data(self.ldt_timestamps, self.ls_symbols , ls_keys)
           self.d_data = dict(zip(ls_keys, ldf_data))
-          # spy_ldf_data = self.dataobj.get_data(self.ldt_timestamps, ['SPY'], ls_keys)
-          #ldf_data_2008 = dataobj.get_data(ldt_timestamps, ls_symbols_2008, ls_keys)
-          #self.spy_d_data = dict(zip(ls_keys, spy_ldf_data ))            
 
-      def tradier_api():
-            connection = httplib.HTTPSConnection('sandbox.tradier.com',443, timeout = 30)
-            headers = {"Accept":"application/json",
-               "Authorization": "Bearer ufXQkV1EC3VWP9rnhhCIotuOKMS7" }
-            connection.request('POST', '/v1/markets/quotes?symbols=spy', None, headers)
+
+      def get_historical_price():
+
+            self.connection.request('POST', '/v1/markets/historical?symbols='+self.ls_symbols+'&start=2014-01-10&end=2014-02-03', None, self.headers)
             try:
-                response = connection.getresponse()
+                response = self.connection.getresponse()
                 content = response.read()
                 #Success
                 print('Response status ' + str(response.status))
@@ -84,6 +88,11 @@ class Trader:
             except httplib.HTTPException, e:
                 #Exception
                 print('Exception during request')
+
+
+
+
+
 
 
       def process_data(self):

@@ -61,9 +61,10 @@ def insertDT(input_list):
           self.headers = {"Accept":"application/json",
                "Authorization": "Bearer ufXQkV1EC3VWP9rnhhCIotuOKMS7" }
           self.connection = httplib.HTTPSConnection('sandbox.tradier.com',443, timeout = 30)
+
           self.ldt_timestamps = du.getNYSEdays(self.dt_start, self.dt_end, dt.timedelta(hours=16))
-          for date in self.ldt_timestamps:
-                print date 
+
+
                   
           self.dataobj = da.DataAccess(dataprovider)
 
@@ -74,21 +75,6 @@ def insertDT(input_list):
           self.ls_symbols.append('SPY')
           ldf_data = self.dataobj.get_data(self.ldt_timestamps, self.ls_symbols , ls_keys)
           self.d_data = dict(zip(ls_keys, ldf_data))
-
-
-      def get_historical_price():
-
-            self.connection.request('POST', '/v1/markets/historical?symbols='+self.ls_symbols+'&start=2014-01-10&end=2014-02-03', None, self.headers)
-            try:
-                response = self.connection.getresponse()
-                content = response.read()
-                #Success
-                print('Response status ' + str(response.status))
-                return content
-            except httplib.HTTPException, e:
-                #Exception
-                print('Exception during request')
-
 
 
 

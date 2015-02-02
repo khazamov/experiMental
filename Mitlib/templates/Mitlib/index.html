@@ -1,84 +1,107 @@
-<html>
+<html xmlns="http://www.w3.org/1999/html">
 
 
 <header>
 
-{% load staticfiles %}
 
+{% load staticfiles  %}
 
 
 <script src='http://codepen.io/assets/libs/fullpage/jquery.js'> </script>
+
+
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.1/Chart.min.js"> </script>
 
 
 <link rel="stylesheet" href="{% static 'Mitlib/style.css' %}" type="text/css" >
+<link rel="stylesheet" href="{% static 'Mitlib/normalize.css' %}" type="text/css" >
+<link rel='stylesheet prefetch' href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css'>
+<script src="{% static 'Mitlib/prefixfree.min.js' %}"></script>
 
 </header>
+
 <body>
 
 
-<div id="canvas-holder">
-
-
-			<canvas id="chart-area" width="300" height="300"/>
-
-
-</div>
 
 
 
 
 
 
+<div id="wrap">
 
+<form class = "" action="{% url 'traderesult' %}" method="POST">
+{% csrf_token %}
 
-{%  if  latest_question_list  %}
+    <legend> Backtest here  </legend>
 
+    <div class="form-group">
 
-<ul>
-{% for question in latest_question_list %} 
+        <label >Initial allocation</label>
+      <input type="text" name = "cash" value =  "100000" class="form-control" autofocus/>
 
-  <li> <a href="{% url 'detail' question.id %}"> {{ question.question_text }} </a> </li>
- 
-{% endfor %}
-
-</ul>
-
-{% else %}
-   <p> No questions </p>
-
-{% endif %}
-
-
-<br>
-
-Trading simulator
+      <label for="startDate">Start date</label>
+      <div class="input-group">
+        <i class="glyphicon glyphicon-calendar input-group-addon"> </i>
+        <input type="text" id="date_start" name = 'date_start' class="form-control"/>
+      </div>
 
 
 
-<form action="{% url 'traderesult' %}" method="post">
 
-    {% csrf_token %}
-    <label for="date_trader1">Start date: </label>
-    <input id="id_date_trader" type="text" name="date_start" />
+    <label for="endDate">End date</label>
 
-    <label for="date_trader2">End date: </label>
-    <input id="id_date_trader1" type="text" name="date_end" />
+    <div class="input-group">
+        <i class="glyphicon glyphicon-calendar input-group-addon"> </i>
+        <input type="text" id="endDate" class="form-control" name="date_end"/>
+      </div>
 
-    <label for="event_type"> Event type: </label>
-    <input list="dataset"  autocomplete="5% threshold" id="id_event_type"   name="event_type" />
+
+
+    <label for="data_source"> Source: </label>
+    <div class = "input-group">
+    <input list="datasource"    class = "form-control"   name="data_source"  autofocus/>
+    </div>
+
+
+        <label for="event_type"> Event type: </label>
+        <div class = "input-group">
+            <input list="dataset"  class = "form-control"     name="event_type" />
+         </div>
+    </div>
+
+
+
     <datalist id="dataset">
-        <option value="5threshold"> 5% threshold </option>
-        <option value="10threshold"> 10% threshold </option>
-        <option value="5bollingerbands">5% with bollinger bands </option>
-        <option value="10bollingerbands"> 10% with bollinger bands </option>
+        <option value="threshold"> 5% threshold </option>
+        <option value="bollingerbands">5% with bollinger bands </option>
     </datalist>
-    </input>
 
 
-    <input type="submit" value="OK">
+
+
+
+
+
+    <datalist id="datasource">
+        <option value="Yahoo">    </option>
+        <option value="Morningstar (limited)">    </option>
+    </datalist>
+
+
+    <input type="submit"  class="btn btn-default" value="GO">
+
 </form>
 
+
+  </div>
+
+
+<script src='http://codepen.io/assets/libs/fullpage/jquery_and_jqueryui.js'></script>
+
+<script src="{% static 'Mitlib/input.js' %}"> </script>
 
 
 </body>

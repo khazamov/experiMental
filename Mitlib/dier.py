@@ -6,8 +6,6 @@ import datetime as dt
 import numpy
 import re
 from pandas import TimeSeries
-import QSTK.qstkutil.DataAccess as da
-import pickle
 
 
 
@@ -17,11 +15,11 @@ class Dier:
         self.ls_symbol_len = 5
         self.ls_keys = ['open', 'high', 'low', 'close', 'volume']
         #ldf_data_dict1 = numpy.array([])
-
+        self.ldt_timestamps = []
 
 
         #HITTING QUOTA WITH MORNINGSTAR FOR THE FULL LIST OF SYMBOLS
-        self.ls_symbols = ['GOOG', 'AAPL']
+        self.ls_symbols = ['GOOG', 'AAPL','SPY']
 
     def get_data(self):
         ldf_data_dict1 = {}
@@ -41,6 +39,7 @@ class Dier:
             #TODO: get info on open, high,low and volume as well
                 split_list = re.split('-', day[0].text)
                 datetime_temp = dt.datetime(int(split_list[0]), int(split_list[1]), int(split_list[2]), 16, 00)
+                self.ldt_timestamps.append(datetime_temp)
                 ldf_data1_series.set_value(datetime_temp, float(day[3].text))
             #ldf_resized1 =  numpy.resize(ldf_data1, (j,5))
             # need to turn array 90 degrees clock-wise to be able to zip it with symbol keys

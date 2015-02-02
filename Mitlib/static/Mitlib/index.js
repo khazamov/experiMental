@@ -1,4 +1,4 @@
-		var jData = {
+var jData = {
 			labels: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "November", "December"],
 			datasets: [
 				{
@@ -29,3 +29,6 @@
 					responsive:true
 				});
 			};
+
+
+

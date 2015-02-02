@@ -5,9 +5,22 @@ li a {
 
 
 #canvas-holder{
-
    width:50%;
    height:50%;
-
-
 }
+
+
+#wrap {
+  width: 400px;
+  margin: 24px auto 0;
+}
+
+#link {
+  display: none;
+  font-size: 2rem;
+}
+
+.input-group-addon {
+  cursor: pointer;
+}
+

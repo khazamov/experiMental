@@ -20,7 +20,8 @@ import copy
 import math
 import matplotlib.pyplot as plt
 import QSTK.qstkstudy.EventProfiler as ep
-import httplib
+from dier import Dier
+import  pdb
 
 ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
 
@@ -35,7 +36,7 @@ def insertDT(input_list):
 
 
 
-    class Trader:
+class Trader:
       
       filepath = ''
 
@@ -54,31 +55,27 @@ def insertDT(input_list):
           self.daily_portfolio_val = []
           self.ls_symbols = []
 
-          self.connection = []
-          self.headers = []
-
-
-          self.headers = {"Accept":"application/json",
-               "Authorization": "Bearer ufXQkV1EC3VWP9rnhhCIotuOKMS7" }
-          self.connection = httplib.HTTPSConnection('sandbox.tradier.com',443, timeout = 30)
-
-          self.ldt_timestamps = du.getNYSEdays(self.dt_start, self.dt_end, dt.timedelta(hours=16))
-
-
-                  
-          self.dataobj = da.DataAccess(dataprovider)
-
-          self.ls_symbols = self.dataobj.get_symbols_from_list('sp5002012')
-          #ls_symbols_2008 = dataobj.get_symbols_from_list('sp5002008')
-          
-
-          self.ls_symbols.append('SPY')
-          ldf_data = self.dataobj.get_data(self.ldt_timestamps, self.ls_symbols , ls_keys)
-          self.d_data = dict(zip(ls_keys, ldf_data))
 
 
 
 
+
+
+
+          if dataprovider == 'Yahoo':
+                self.dataobj = da.DataAccess(dataprovider)
+                self.ldt_timestamps = du.getNYSEdays(self.dt_start, self.dt_end, dt.timedelta(hours=16))
+                self.ls_symbols = self.dataobj.get_symbols_from_list('sp5002012')
+                self.ls_symbols.append('SPY')
+                ldf_data = self.dataobj.get_data(self.ldt_timestamps, self.ls_symbols , ls_keys)
+                self.d_data = dict(zip(ls_keys, ldf_data))
+          else:
+            dataobj = Dier()
+            #pdb.set_trace()
+            self.ls_symbols = dataobj.ls_symbols
+            ldf_data = dataobj.get_data()
+            self.d_data = {'close':ldf_data}
+            self.ldt_timestamps = dataobj.ldt_timestamps
 
 
       def process_data(self):
@@ -119,9 +116,10 @@ def insertDT(input_list):
               dt_end = self.dt_end 
               
               df_close = self.d_data['close']
-              df_actual_close = self.d_data['actual_close']    
-              ts_market = df_close['SPY']              
- 
+
+              #df_actual_close = self.d_data['actual_close']
+
+              ts_market = df_close['SPY']
               bollinger_band = []
               moving_average = []
               upper_band = []
@@ -165,7 +163,7 @@ def insertDT(input_list):
       def find_events_wband(self):
                       ''' Finding the event dataframe '''
                       df_close = self.d_data['close']
-                      #df_close = self.d_data['actual_close']    
+                      #df_actual_close = self.d_data['actual_close']
                       ts_market = copy.deepcopy(df_close['SPY'])
                       print "Finding Events"
                       # separate out event related parameters
@@ -189,6 +187,7 @@ def insertDT(input_list):
                         if s_sym != 'SPY':    
                           bb = []
                           bb  =   self.bollinger_bands(s_sym)
+                          #pdb.set_trace()
                           for i in xrange(1, len(self.ldt_timestamps)):
                               #print self.ldt_timestamps[i], s_sym
                               
@@ -267,7 +266,7 @@ def insertDT(input_list):
                            # market is up more then 2%
                            
                            if f_actual_symprice_yest >= -2.0 and f_actual_symprice_today <= -2.0:
-                               #df_events[s_sym].ix[ldt_timestamps[i]] = 1 
+                               #df_events[s_sym].ix[ldt_timestamps[i]] = 1
                                buy_year = self.ldt_timestamps[i].year
                                buy_month = self.ldt_timestamps[i].month
                                buy_day = self.ldt_timestamps[i].day
@@ -280,8 +279,12 @@ def insertDT(input_list):
                                enter_trade = [buy_year] +[buy_month] + [buy_day] + [s_sym] + ['BUY'] + [number_of_shares]
                                exit_trade = [sell_year] +[sell_month] + [sell_day] + [s_sym] + ['SELL'] + [number_of_shares]
                                eventsfile.writerows([enter_trade, exit_trade])
+                   # ep.eventprofiler(df_events, self.d_data, i_lookback=20, i_lookforward=20,
+                   #    s_filename='MyEventStudy.pdf', b_market_neutral=True, b_errorbars=True,
+                   #    s_market_sym='SPY')
                                
-                   f.close()     
+                   f.close()
+
       def jan_trader(self):
                    ''' Finding the event dataframe '''
                    df_close = self.d_data['close']

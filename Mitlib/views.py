@@ -1,5 +1,4 @@
 import datetime as dt
-
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.template import loader
@@ -11,13 +10,9 @@ import pdb
 from Mitlib.models import Question, Choice
 from Mitlib.simulator import Trader
 import json
-import numpy
-
-
-#pdb.set_trace()
-
-
-
+from dier import Dier
+from MyForms import Myform
+import re
 ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
 
 def insertDT(input_list):
@@ -30,15 +25,19 @@ def insertDT(input_list):
 
 
 
-
-from MyForms import Myform
+def to_datetime(arg,str='/'):
+    if not arg:
+        return False
+    else:
+        split_list = re.split(str, arg)
+        datetime_temp = dt.datetime(int(split_list[2]), int(split_list[0]), int(split_list[1]), 16, 00)
+        return datetime_temp
 
 
 
 class IndexView(generic.ListView):
 
     template_name = ('Mitlib/index.html')
-
     def get_queryset(self):
         return Question.objects.filter(pub_date__lte=timezone.now()).order_by('pub_date')[:5]
 
@@ -58,19 +57,28 @@ class DetailView(generic.DetailView):
 
 def traderesult(request):
 
+    # pdb.set_trace()
     if request.method == 'POST':
-        form = Myform(request.POST)
-        if form.is_valid():
-            date_start = form.date_start
-            rstrategy = Trader('orders.csv', 'Yahoo', date_start , dt.datetime(2009, 12,31), 100000)
-            rstrategy.find_events_wband()
-            rstrategy.process_data()
-            rstrategy.run()
-            rstrategy.computestats()
-            sDaily_portfolio_return = json.dumps(rstrategy.daily_portfolio_return.tolist())
-            sDaily_fund_return = json.dumps(rstrategy.daily_spy_return.tolist())
-            return render(request, 'Mitlib/traderesult.html', {'daily_fund_return':sDaily_fund_return, 'daily_portfolio_return':sDaily_portfolio_return })
+
+    #    form = Myform(request.POST)
+             date_start = request.POST['date_start']
+             date_end =   request.POST['date_end']
+             cash = request.POST['cash']
+             #datasource = request.POST['data_source']
+             # if request.POST['event_type'] == 'threshold':
+             #    event_type = rstrategy.find_events
+             # else:
+             #    event_type = rstrategy.find_events_wband
+             DM = Trader('orders.csv', 'Yahoo', to_datetime(date_start), to_datetime(date_end), int(cash))
+             DM.find_events_wband()
+             DM.process_data()
+             DM.run()
+             DM.computestats()
+             sDaily_portfolio_return = json.dumps(DM.daily_portfolio_return.tolist())
+             sDaily_fund_return = json.dumps(DM.daily_spy_return.tolist())
+             return render(request, 'Mitlib/traderesult.html', {'daily_fund_return':sDaily_fund_return, 'daily_portfolio_return':sDaily_portfolio_return })
     else:
+
             form = Myform()
     return render(request, 'Mitlib/traderesult.html', {'form':form})
 

@@ -7,17 +7,25 @@
 {% load staticfiles  %}
 
 
-<script src='http://codepen.io/assets/libs/fullpage/jquery.js'> </script>
+<!-- <script src='http://codepen.io/assets/libs/fullpage/jquery.js'> </script> -->
 
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.1/Chart.min.js"> </script>
+    <link rel='stylesheet prefetch' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css'>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+<script src="{% static 'Mitlib/angular.min.js' %}"> </script>
 
+
+ <script src="{% static 'Mitlib/input.js' %}"> </script>
+
+<script src="http://jsconsole.com/remote.js?D5E3C33E-5E5B-479B-935A-C8F85595DE50"></script>
 
 <link rel="stylesheet" href="{% static 'Mitlib/style.css' %}" type="text/css" >
 <link rel="stylesheet" href="{% static 'Mitlib/normalize.css' %}" type="text/css" >
-<link rel='stylesheet prefetch' href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css'>
-<script src="{% static 'Mitlib/prefixfree.min.js' %}"></script>
+
+
+
 
 </header>
 
@@ -61,17 +69,15 @@
 
 
     <label for="data_source"> Source: </label>
-    <div class = "input-group">
-    <input list="datasource"    class = "form-control"   name="data_source"  autofocus/>
+    <div class = "input-group" width = 20px>
+    <input list="datasource"    class = "form-control" id="DataSource"  name="datasource"  autofocus/>
     </div>
 
 
         <label for="event_type"> Event type: </label>
         <div class = "input-group">
-            <input list="dataset"  class = "form-control"     name="event_type" />
+            <input list="dataset"  class = "form-control"  id="EventType"   name="eventtype" />
          </div>
-    </div>
-
 
 
     <datalist id="dataset">
@@ -81,27 +87,33 @@
 
 
 
-
-
-
-
     <datalist id="datasource">
         <option value="Yahoo">    </option>
         <option value="Morningstar (limited)">    </option>
     </datalist>
+
+    </div>
+
 
 
     <input type="submit"  class="btn btn-default" value="GO">
 
 </form>
 
+    <div ng-app="myModule" >
+    <div ng-controller="AlertDemoCtrl">
+  <alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.msg}}</alert>
+  <button class='btn btn-default' ng-click="addAlert()">Add Alert</button>
+</div>
+        </div>
 
   </div>
 
 
 <script src='http://codepen.io/assets/libs/fullpage/jquery_and_jqueryui.js'></script>
 
-<script src="{% static 'Mitlib/input.js' %}"> </script>
+
+
 
 
 </body>

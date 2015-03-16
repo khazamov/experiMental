@@ -6,6 +6,7 @@ import datetime as dt
 import numpy
 import re
 from pandas import TimeSeries
+from pandas import DataFrame
 
 
 
@@ -47,6 +48,6 @@ class Dier:
             #for i in range(0,5):
             #TODO: caching
             ldf_data_dict1.update({self.ls_symbols[i]: ldf_data1_series})
-        return ldf_data_dict1
+        return DataFrame.from_dict(ldf_data_dict1)
 
 

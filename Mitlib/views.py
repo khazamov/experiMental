@@ -70,7 +70,7 @@ def traderesult(request):
              # else:
              #    event_type = rstrategy.find_events_wband
              DM = Trader('orders.csv', 'Yahoo', to_datetime(date_start), to_datetime(date_end), int(cash))
-             DM.find_events_wband()
+             DM.find_events()
              DM.process_data()
              DM.run()
              DM.computestats()

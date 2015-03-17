@@ -420,7 +420,6 @@ def simulate():
     rstrategy.computestats()
 
     time6 = time.time()
-
     logging.info('compute stats: %f' %(time6-time5))
     print rstrategy.order_table
 

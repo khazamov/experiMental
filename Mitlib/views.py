@@ -10,10 +10,60 @@ import pdb
 from Mitlib.models import Question, Choice
 from Mitlib.simulator import Trader
 import json
-from dier import Dier
 from MyForms import Myform
+import hotshot
+import os
+import time
+import settings
+import tempfile
 import re
+
 ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+
+
+
+try:
+    PROFILE_LOG_BASE = settings.BASE_DIR + settings.PROFILE_LOG_BASE
+except:
+    PROFILE_LOG_BASE = tempfile.gettempdir()
+
+
+
+
+def profile(log_file):
+    """Profile some callable.
+
+    This decorator uses the hotshot profiler to profile some callable (like
+    a view function or method) and dumps the profile data somewhere sensible
+    for later processing and examination.
+
+    It takes one argument, the profile log name. If it's a relative path, it
+    places it under the PROFILE_LOG_BASE. It also inserts a time stamp into the
+    file name, such that 'my_view.prof' become 'my_view-20100211T170321.prof',
+    where the time stamp is in UTC. This makes it easy to run and compare
+    multiple trials.
+    """
+
+    if not os.path.isabs(log_file):
+        log_file = os.path.join(PROFILE_LOG_BASE, log_file)
+
+    def _outer(f):
+        def _inner(*args, **kwargs):
+            # Add a timestamp to the profile output when the callable
+            # is actually called.
+            (base, ext) = os.path.splitext(log_file)
+            base = base + "-" + time.strftime("%Y%m%dT%H%M%S", time.gmtime())
+            final_log_file = base + ext
+
+            prof = hotshot.Profile(final_log_file)
+            try:
+                ret = prof.runcall(f, *args, **kwargs)
+            finally:
+                prof.close()
+            return ret
+
+        return _inner
+    return _outer
 
 def insertDT(input_list):
         to_be_sorted = copy.deepcopy(input_list)
@@ -35,13 +85,9 @@ def to_datetime(arg,str='/'):
 
 
 
-class IndexView(generic.ListView):
+def index(request):
 
-    template_name = ('Mitlib/index.html')
-    def get_queryset(self):
-        return Question.objects.filter(pub_date__lte=timezone.now()).order_by('pub_date')[:5]
-
-
+    return render(request,'Mitlib/index.html')
 
 
 class ResultView(generic.DetailView):
@@ -55,9 +101,9 @@ class DetailView(generic.DetailView):
     def get_queryset(self):
         return Question.objects.filter(pub_date__lte=timezone.now())
 
+#@profile("traderesult.prof")
 def traderesult(request):
 
-    # pdb.set_trace()
     if request.method == 'POST':
 
     #    form = Myform(request.POST)
@@ -69,14 +115,15 @@ def traderesult(request):
              #    event_type = rstrategy.find_events
              # else:
              #    event_type = rstrategy.find_events_wband
-             DM = Trader('orders.csv', 'Yahoo', to_datetime(date_start), to_datetime(date_end), int(cash))
-             DM.find_events()
+             DM = Trader('Yahoo', to_datetime(date_start), to_datetime(date_end), int(cash))
+             DM.find_events_wband()
              DM.process_data()
              DM.run()
              DM.computestats()
              sDaily_portfolio_return = json.dumps(DM.daily_portfolio_return.tolist())
              sDaily_fund_return = json.dumps(DM.daily_spy_return.tolist())
-             return render(request, 'Mitlib/traderesult.html', {'daily_fund_return':sDaily_fund_return, 'daily_portfolio_return':sDaily_portfolio_return })
+             sOutput_dates = json.dumps(DM.output_dates())
+             return render(request, 'Mitlib/traderesult.html', {'daily_fund_return':sDaily_fund_return, 'daily_portfolio_return':sDaily_portfolio_return, 'output_dates':sOutput_dates })
     else:
 
             form = Myform()

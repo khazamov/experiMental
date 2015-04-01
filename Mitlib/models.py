@@ -19,13 +19,16 @@ class Choice(models.Model):
 	return self.choice_text
 
 
+class Trade(models.Model):
+   date = models.DateField()
+   ticker = models.CharField(max_length=200)
+   operation = models.CharField(max_length=200)
+   num_shares = models.IntegerField()
+   def __str__(self):
+	return self.question_text
 
-#class Fund():
-#    int data[]
-#    return
-#    avgdailyreturn
-#    cumulativereturn
-#    funddailyreturn
+
+
 
 
 

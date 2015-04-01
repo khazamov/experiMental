@@ -24,6 +24,7 @@ from dier import Dier
 import pdb
 import time
 import logging
+from Mitlib.models import Trade
 
 
 
@@ -42,12 +43,11 @@ def insertDT(input_list):
 class Trader:
 
 
-    def __init__(self, filename, dataprovider, startdt, enddt, initial_cash):
+    def __init__(self, dataprovider, startdt, enddt, initial_cash):
         self.daily_portfolio_return = []
         self.daily_spy_return = []
         self.dt_start = startdt
         self.dt_end = enddt
-        self.filepath = filename
         self.cumulativeportval = initial_cash
         self.order_table = []
         self.portfolio = dict
@@ -72,42 +72,35 @@ class Trader:
                   ldf_data = dataobj.get_data()
                   self.d_data = {'close':ldf_data}
                   self.ldt_timestamps = [set(dataobj.ldt_timestamps)]
+        Trade.objects.all().delete()
 
+    def output_dates(self):
+        return  [datetime.strftime("%d/%m/%y") for datetime in self.ldt_timestamps]
 
     def process_data(self):
-
         dt_timeofday = dt.timedelta(hours=16)
         try:
-            with open(self.filepath, 'rU') as csv_con:
-                readerlist = list(csv.reader(csv_con, delimiter=",", quoting=csv.QUOTE_NONE))
-                # convert strings to python datetimes
-                reader_listDT = insertDT(readerlist)
-                #sort in chronological order so we can prepare neat orders table
-                #sorted(reader_listDT, key = lambda ticker: ticker[0]) - this is a not joke
-                time1=time.time()
-                reader_listDT.sort(key=lambda ticker: ticker[0])
-                time2=time.time()
-                logging.info('sort list of symbols: %f' %(time2-time1))
-                for row in reader_listDT:
-                    print row, '\n'
-                #getting set of tickers from trade book
+                trade_sorted = Trade.objects.order_by('date')
+
                 portfolio = []
-                for row in reader_listDT:
-                    portfolio.append(row[3])
-                    #took out from program method to place in initialisation phase
-                    self.tradedates.append(row[0])
+                for row in trade_sorted:
+                    portfolio.append(row.ticker)
+                    self.tradedates.append(row.date)
                 portfolioset = set(portfolio)
                 #timestamps for given trade period
-                self.ldt_timestamps = du.getNYSEdays(reader_listDT[0][0], reader_listDT[-1][0], dt.timedelta(hours=16))
+                self.ldt_timestamps = du.getNYSEdays(trade_sorted.first().date, trade_sorted.last().date, dt.timedelta(hours=16))
+
+
+
                 # ldf_data = self.dataobj.get_data(self.ldt_timestamps, list(portfolioset), ls_keys)
                 # #after zipping up with ls_keys, it's basically a dictionary of dictionary
                 # self.d_data = dict(zip(ls_keys, ldf_data))
-
                 #need order table to run simulation
-                self.order_table = copy.deepcopy(reader_listDT)
+                self.order_table = trade_sorted
                 #initialize portfolio allocation
                 self.portfolio = {x: 0 for x in portfolioset}
-                print self.portfolio
+                #print self.portfolio
+
         except Exception, e:
             print e
 
@@ -155,8 +148,8 @@ class Trader:
             plt.ylabel('Close')
             plt.xlabel('Date')
 
-            for key, v in zip(self.ldt_timestamps, bollinger_band):
-                print key, v
+            # for key, v in zip(self.ldt_timestamps, bollinger_band):
+            #     print key, v
         return bollinger_band
 
     def find_events_wband(self):
@@ -172,8 +165,6 @@ class Trader:
         # Creating an empty dataframe
         df_events = copy.deepcopy(df_close)
         df_events = df_events * np.NAN
-        f = open(self.filepath, 'w')
-        eventsfile = csv.writer(f, delimiter=',', quotechar='\'', quoting=csv.QUOTE_MINIMAL)
 
         # Time stamps for the event range
         #self.ldt_timestamps = df_close.index
@@ -186,7 +177,6 @@ class Trader:
             if s_sym != 'SPY':
                 bb = []
                 bb = self.bollinger_bands(s_sym)
-                #pdb.set_trace()
                 for i in xrange(1, len(self.ldt_timestamps)):
                     #print self.ldt_timestamps[i], s_sym
 
@@ -221,15 +211,21 @@ class Trader:
                         sell_year = self.ldt_timestamps[idx].year
                         sell_month = self.ldt_timestamps[idx].month
                         sell_day = self.ldt_timestamps[idx].day
-                        enter_trade = [buy_year] + [buy_month] + [buy_day] + [s_sym] + ['BUY'] + [number_of_shares]
-                        exit_trade = [sell_year] + [sell_month] + [sell_day] + [s_sym] + ['SELL'] + [number_of_shares]
-                        eventsfile.writerows([enter_trade, exit_trade])
-        ep.eventprofiler(df_events, self.d_data, i_lookback=20, i_lookforward=20,
-                         s_filename='MyEventStudy.pdf', b_market_neutral=True, b_errorbars=True,
-                         s_market_sym='SPY')
-        f.close()
+
+                        buy_date = dt.datetime(buy_year, buy_month, buy_day)
+                        sell_date = dt.datetime(sell_year, sell_month, sell_day)
+
+                        Trade.objects.bulk_create([
+                            Trade(date=buy_date, ticker=s_sym, operation='BUY', num_shares=number_of_shares),
+                            Trade(date=sell_date, ticker=s_sym, operation='SELL', num_shares=number_of_shares)
+                        ])
+
+
+
 
     def find_events(self):
+      try:
+        #pdb.set_trace()
         ''' Finding the event dataframe '''
         #df_close = self.d_data['close']
         df_actual_close = self.d_data['close']
@@ -243,12 +239,11 @@ class Trader:
         # Creating an empty dataframe
         df_events = copy.deepcopy(df_actual_close)
         df_events = df_events * np.NAN
-        f = open(self.filepath, 'wb')
-        eventsfile = csv.writer(f, delimiter=',', quotechar='\'', quoting=csv.QUOTE_MINIMAL)
 
         # Time stamps for the event range
         self.ldt_timestamps = df_actual_close.index
         i = 0
+
         for s_sym in self.ls_symbols:
             for i in range(1, len(self.ldt_timestamps)):
                 # Calculating the returns for this timestamp
@@ -264,25 +259,34 @@ class Trader:
                 # Event is found if the symbol is down more then 3% while the
                 # market is up more then 2%
 
-             #   if f_actual_symprice_yest >= -2.0 and  f_actual_symprice_today <= -2.0:
+                if f_actual_symprice_yest >= -2.0 and  f_actual_symprice_today <= -2.0:
                 #df_events[s_sym].ix[ldt_timestamps[i]] = 1
-                buy_year = self.ldt_timestamps[i].year
-                buy_month = self.ldt_timestamps[i].month
-                buy_day = self.ldt_timestamps[i].day
-                idx = i + 5
-                if i + 5 >= len(self.ldt_timestamps):
-                    idx = -1
-                sell_year = self.ldt_timestamps[idx].year
-                sell_month = self.ldt_timestamps[idx].month
-                sell_day = self.ldt_timestamps[idx].day
-                enter_trade = [buy_year] + [buy_month] + [buy_day] + [s_sym] + ['BUY'] + [number_of_shares]
-                exit_trade = [sell_year] + [sell_month] + [sell_day] + [s_sym] + ['SELL'] + [number_of_shares]
-                eventsfile.writerows([enter_trade, exit_trade])
+
+                    buy_year = self.ldt_timestamps[i].year
+                    buy_month = self.ldt_timestamps[i].month
+                    buy_day = self.ldt_timestamps[i].day
+                    idx = i + 5
+                    if i + 5 >= len(self.ldt_timestamps):
+                        idx = -1
+                    sell_year = self.ldt_timestamps[idx].year
+                    sell_month = self.ldt_timestamps[idx].month
+                    sell_day = self.ldt_timestamps[idx].day
+
+                    buy_date = dt.datetime(buy_year, buy_month, buy_day)
+                    sell_date = dt.datetime(sell_year, sell_month, sell_day)
+                    Trade.objects.bulk_create([
+                        Trade(date=buy_date, ticker=s_sym, operation='BUY', num_shares=number_of_shares),
+                        Trade(date=sell_date, ticker=s_sym, operation='SELL', num_shares=number_of_shares)
+                    ])
+
+      except Exception, E:
+          print 'Exception'+E+'occured'
+
         # ep.eventprofiler(df_events, self.d_data, i_lookback=20, i_lookforward=20,
         # s_filename='MyEventStudy.pdf', b_market_neutral=True, b_errorbars=True,
         # s_market_sym='SPY')
 
-        f.close()
+        # f.close()
 
     def jan_trader(self):
         ''' Finding the event dataframe '''
@@ -290,7 +294,7 @@ class Trader:
         df_actual_close = self.d_data['actual_close']
         ts_market = df_actual_close['SPY']
 
-        print "Finding Events"
+        #print "Finding Events"
         # separate out event related parameters
         # from transcation parameters
         #
@@ -313,8 +317,6 @@ class Trader:
         sell_day = "9"
         enter_trade = [buy_year] + [buy_month] + [buy_day] + ["SPX"] + ['BUY'] + [number_of_shares]
         exit_trade = [sell_year] + [sell_month] + [sell_day] + ["SPX"] + ['SELL'] + [number_of_shares]
-        #enter_trade = [buy_year] +[buy_month] + [buy_day] + ["DFSCX"] + ['BUY'] + [number_of_shares]
-        #exit_trade = [sell_year] +[sell_month] + [sell_day] + ["DFSCX"] + ['SELL'] + [number_of_shares]
         eventsfile.writerows([enter_trade, exit_trade])
         f.close()
 
@@ -332,30 +334,29 @@ class Trader:
             cash_value = 0
             datestr = str(time).rsplit(' ')[0].rsplit('-')
             datestamp = dt.date(int(datestr[0]), int(datestr[1]), int(datestr[2]))
-
             samedaytrade = self.tradedates.count(datestamp)
-
             #handling multiple trades made on the same day
             if samedaytrade != 0:
                 for i in range(0, samedaytrade):
                     trade_index = self.tradedates.index(datestamp) + i
                     order = self.order_table[trade_index]
-                    if order[4].upper() == 'BUY':
+                    if order.operation.upper() == 'BUY':
                         flow = -1
-                        self.portfolio[order[3]] += int(order[5])
-                    if order[4].upper() == 'SELL':
+                        self.portfolio[order.ticker] += int(order.num_shares)
+                    if order.operation.upper() == 'SELL':
                         flow = 1
-                        self.portfolio[order[3]] -= int(order[5])
-                    adj_value = int(order[5]) * close_prices[order[3]][time]
+                        self.portfolio[order.ticker] -= int(order.num_shares)
+                    adj_value = int(order.num_shares) * close_prices[order.ticker][time]
                     #instead of maintaining cash entry in portfolio just use difference between initial cash value and present day portfolio cash value
                     self.cumulativeportval = self.cumulativeportval + adj_value * flow
                     #rebalancing according to daily market fluctuations
                     #important to keep rebalancing outside of the trade orders loop
                     #otherwise daily returns will have multiple entries for the same day and computestats() will return erroneous results
+
             for ticker in self.portfolio:
                 cash_value += self.portfolio[ticker] * close_prices[ticker][time]
             self.daily_portfolio_val.append(self.cumulativeportval + cash_value)
-            print time, self.portfolio, self.cumulativeportval + cash_value
+            #print time, self.portfolio, self.cumulativeportval + cash_value
 
     def computestats(self):
 
@@ -376,15 +377,7 @@ class Trader:
         na_rets_spy = close_prices['SPY'].values
         self.daily_spy_return = tsu.returnize0(na_rets_spy)
 
-        print "AVG return: ", avg, "stdev of return: ", stdev, "sharp ratio: ", SR, "total cumulative return", total_return
-        print self.daily_portfolio_return
-        print self.daily_spy_return
-        # plt.clf()
-        # plt.plot(self.ldt_timestamps, self.daily_portfolio_return)
-        # plt.plot(self.ldt_timestamps, self.daily_spy_return)
-        # plt.legend(self.ls_symbols)
-        # plt.ylabel('Return comparison')
-        # plt.xlabel('Date')
+
 
 
 def simulate():
@@ -394,7 +387,7 @@ def simulate():
 
     logging.info('Log simulate')
     time1 = time.time()
-    rstrategy = Trader('orders.csv', 'Yahoo', dt.datetime(2011, 01, 02), dt.datetime(2012, 12, 06), 100000)
+    rstrategy = Trader('Yahoo', dt.datetime(2011, 01, 02), dt.datetime(2012, 12, 06), 100000)
 
     time2 = time.time()
     logging.info('Class initialization runtime: %f' %(time2-time1))
@@ -413,7 +406,6 @@ def simulate():
     logging.info('processing data: %f' %(time4-time3))
     rstrategy.run()
 
-# spy
     time5=time.time()
     logging.info('run strategy: %f' %(time5-time4))
 
@@ -421,7 +413,7 @@ def simulate():
 
     time6 = time.time()
     logging.info('compute stats: %f' %(time6-time5))
-    print rstrategy.order_table
+    #print rstrategy.order_table
 
   except  AssertionError as AE:
       print "Assertion failed :", format( AE.message)

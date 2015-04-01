@@ -59,12 +59,22 @@ WSGI_APPLICATION = 'Mitlib.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME':'django_db',
+        'ENGINE': 'django.db.backends.mysql',
+        'USER':'root',
+	'PASSWORD':'password',
+	'HOST':'localhost',
+	'PORT':'3306',
     }
 }
 
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'my_cache_table',
+    }
+}
 
 
 # Internationalization
@@ -88,3 +98,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
 STATIC_URL = '/static/'
+PROFILE_LOG_BASE = '/logs/'

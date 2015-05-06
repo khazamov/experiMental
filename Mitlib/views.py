@@ -137,21 +137,6 @@ def result(request, question_id):
     return HttpResponse(t.render(re))
 
 
-def votes(request, question_id):
-    p = get_object_or_404(Question, pk=question_id)
-    try:
-        selected_choice = p.choice_set.get(pk=request.GET['choice'])
-    except (KeyError, Choice.DoesNotExists):
-        re = requestContext(request, {'question': p, 'error_message': 'You didn\'t select a choice'})
-        t = loader.get_template('Mitlib/detail.html')
-        return HttpResponse(t.render(re))
-    # request, 'Mitlib/detail.html',
-    # )
-    else:
-        selected_choice.votes += 1
-        selected_choice.save()
-
-    return HttpResponseRedirect(reverse('result', args=(p.id)))
 
 
 
